@@ -1,19 +1,32 @@
-#! /bin/sh
+#!/bin/sh
 
-NPROCESSORS=$(getconf NPROCESSORS_ONLN 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null)
+NPROCESSORS="$(getconf NPROCESSORS_ONLN 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null)"
 
 cd openssl || exit 1
 
 env \
-    CROSS_COMPILE="" \
-    AR="zig ar" \
-    RANLIB="zig ranlib" \
-    CC="zig cc --target=wasm32-wasi" \
-    CFLAGS="-Ofast -Werror -Qunused-arguments -Wno-shift-count-overflow" \
-    CPPFLAGS="$CPPFLAGS -D_BSD_SOURCE -D_WASI_EMULATED_GETPID -Dgetuid=getpagesize -Dgeteuid=getpagesize -Dgetgid=getpagesize -Dgetegid=getpagesize" \
-    CXXFLAGS="-Werror -Qunused-arguments -Wno-shift-count-overflow" \
-    LDFLAGS="-s -lwasi-emulated-getpid" \
-    ./Configure \
+  AR="/home/x33f3/wasi-sdk-25.0-x86_64-linux/bin/llvm-ar" \
+  RANLIB="/home/x33f3/wasi-sdk-25.0-x86_64-linux/bin/llvm-ranlib" \
+  CC="/home/x33f3/wasi-sdk-25.0-x86_64-linux/bin/clang \
+      --target=wasm32-wasi \
+      --sysroot=/home/x33f3/wasi-sdk-25.0-x86_64-linux/share/wasi-sysroot" \
+  CFLAGS="-O3 -ffast-math -Werror -Qunused-arguments -Wno-shift-count-overflow \
+          -matomics -mbulk-memory -pthread -mthread-model posix" \
+  CPPFLAGS="$CPPFLAGS \
+            -D_BSD_SOURCE \
+            -D_WASI_EMULATED_GETPID \
+            -Dgetuid=getpagesize \
+            -Dgeteuid=getpagesize \
+            -Dgetgid=getpagesize \
+            -Dgetegid=getpagesize" \
+  CXXFLAGS="-Werror -Qunused-arguments -Wno-shift-count-overflow \
+            -matomics -mbulk-memory -pthread -mthread-model posix" \
+  LDFLAGS="-lwasi-emulated-getpid \
+           -Wl,--shared-memory \
+           -Wl,--max-memory=4294967296 \
+           -Wl,--import-memory \
+           -Wl,--export-dynamic" \
+  ./Configure \
     --banner="wasm32-wasi port" \
     no-asm \
     no-async \
